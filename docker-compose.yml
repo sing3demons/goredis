@@ -14,3 +14,35 @@ services:
     container_name: k6
     volumes: 
       - ./scripts:/scripts
+  influxdb:
+    image: influxdb:1.8.10
+    container_name: influxdb
+    environment: 
+      - INFLUXDB_DB=k6
+      - INFLUXDB_HTTP_MAX_BODY_SIZE=0
+    ports: 
+      - 8086:8086
+    volumes: 
+      - ./data/influxdb:/var/lib/influxdb
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment: 
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    ports: 
+      - 3000:3000
+    volumes: 
+      - ./data/grafana:/var/lib/grafana
+
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    environment: 
+      - MARIADB_ROOT_PASSWORD=P@ssw0rd
+      - MARIADB_DATABASE=infinitas
+    ports: 
+      - 3306:3306
+    volumes: 
+      - ./data/mariadb:/var/lib/mysql

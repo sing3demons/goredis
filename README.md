@@ -15,4 +15,5 @@ k6 run scripts/test.js
 #### k6 on docker-compose
 ```
 docker compose run --rm k6 run /scripts/test.js
+docker compose run --rm k6 run /scripts/test.js -u5 -d5s
 ```
