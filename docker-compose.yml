@@ -1,4 +1,3 @@
-version: "3.9"
 services:
   redis:
     image: redis
@@ -14,6 +13,7 @@ services:
     container_name: k6
     volumes: 
       - ./scripts:/scripts
+    # command: run /scripts/test.js -u 5 -d 5s
   influxdb:
     image: influxdb:1.8.10
     container_name: influxdb
