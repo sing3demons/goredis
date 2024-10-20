@@ -12,6 +12,7 @@ RUN go build -ldflags="-s -w" -o main .
 FROM alpine:3.19
 
 RUN apk update && apk upgrade && \
+    apk --no-cache add ca-certificates && \
 	apk add --no-cache tzdata && \
 	ln -snf "/usr/share/zoneinfo/$TZ" /etc/localtime && echo "$TZ" > /etc/timezone
 ENV TZ=Asia/Bangkok

@@ -1,30 +1,23 @@
 services:
-  redis:
-    image: redis
-    container_name: redis
-    ports:
-      - 6379:6379
-    volumes:
-      - ./data/redis:/data
-      - ./config/redis.conf:/redis.conf
-    command: redis-server /redis.conf 
   k6:
-    image: loadimpact/k6
+    image: grafana/k6
     container_name: k6
     volumes: 
       - ./scripts:/scripts
-    # command: run /scripts/test.js -u 5 -d 5s
+      - ./data:/output
+    environment:
+      - K6_OUT=influxdb=http://influxdb:8086/k6
+      - BASE_URL=https://host.docker.internal:8000
+    command: run --out json=/output/output.json --summary-export=/output/summary-export.json /scripts/test.js
   influxdb:
     image: influxdb:1.8.10
     container_name: influxdb
-    environment: 
-      - INFLUXDB_DB=k6
-      - INFLUXDB_HTTP_MAX_BODY_SIZE=0
     ports: 
       - 8086:8086
     volumes: 
       - ./data/influxdb:/var/lib/influxdb
-
+    environment:
+      - INFLUXDB_DB=k6
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -36,13 +29,31 @@ services:
     volumes: 
       - ./data/grafana:/var/lib/grafana
 
-  mariadb:
-    image: mariadb
-    container_name: mariadb
-    environment: 
-      - MARIADB_ROOT_PASSWORD=P@ssw0rd
-      - MARIADB_DATABASE=infinitas
-    ports: 
-      - 3306:3306
-    volumes: 
-      - ./data/mariadb:/var/lib/mysql
+  
+
+  # mariadb:
+  #   image: mariadb
+  #   container_name: mariadb
+  #   environment: 
+  #     - MARIADB_ROOT_PASSWORD=P@ssw0rd
+  #     - MARIADB_DATABASE=infinitas
+  #   ports: 
+  #     - 3306:3306
+  #   volumes: 
+  #     - ./data/mariadb:/var/lib/mysql
+  # redis:
+  #   image: redis
+  #   container_name: redis
+  #   ports:
+  #     - 6379:6379
+  #   volumes:
+  #     - ./data/redis:/data
+  #     - ./config/redis.conf:/redis.conf
+  #   command: redis-server /redis.conf
+  # app:
+  #   build: .
+  #   container_name: app
+  #   ports:
+  #     - 8000:8000
+  #   environment:
+  #     - PORT=8000

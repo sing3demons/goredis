@@ -3,8 +3,10 @@ package main
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -57,7 +59,7 @@ func main() {
 
 		// Convert log entry to JSON
 		logJSON, _ := json.Marshal(logEntry)
-		os.Stdout.Write(logJSON)
+		os.Stdout.Write(append(logJSON, '\n'))
 
 		return nil
 	})
@@ -72,17 +74,46 @@ func main() {
 		})
 	})
 
-	cer, err := tls.LoadX509KeyPair("certs/ssl.cert", "certs/ssl.key")
-	if err != nil {
-		log.Fatal(err)
+	port := "8000"
+
+	idleConnsClosed := make(chan struct{})
+
+	go func() {
+		sigint := make(chan os.Signal, 1)
+		signal.Notify(sigint, os.Interrupt) // Catch OS signals.
+		<-sigint
+
+		// Received an interrupt signal, shutdown.
+		if err := app.Shutdown(); err != nil {
+			// Error from closing listeners, or context timeout:
+			log.Printf("Oops... Server is not shutting down! Reason: %v", err)
+		}
+
+		close(idleConnsClosed)
+	}()
+
+	// check if certs folder exists
+	if _, err := os.Stat("certs"); os.IsNotExist(err) {
+		log.Fatal(app.Listen(fmt.Sprintf(":%s", port)))
+	} else {
+		// Load SSL certificate
+		cer, err := tls.LoadX509KeyPair("certs/ssl.cert", "certs/ssl.key")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		config := &tls.Config{Certificates: []tls.Certificate{cer}}
+
+		ln, err := tls.Listen("tcp", fmt.Sprintf(":%s", port), config)
+		if err != nil {
+			panic(err)
+		}
+
+		log.Fatal(app.Listener(ln))
 	}
 
-	config := &tls.Config{Certificates: []tls.Certificate{cer}}
+	<-idleConnsClosed
 
-	ln, err := tls.Listen("tcp", ":8000", config)
-	if err != nil {
-		panic(err)
-	}
+	fmt.Println("Running cleanup tasks...")
 
-	log.Fatal(app.Listener(ln))
 }
